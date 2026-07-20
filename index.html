@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수학실 예약</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F7FA;
+    --bg-deep:#FFFFFF;
+    --grid-line:#E2E8F0;
+    --grid-line-soft:#EDF1F6;
+    --panel:#FFFFFF;
+    --paper:#FFFFFF;
+    --ink:#1B2A3C;
+    --ink-dim:#5B6B82;
+    --ink-faint:#93A1B5;
+    --cyan:#2F6FED;
+    --cyan-dim:#E8EFFE;
+    --amber:#1E8E5A;
+    --amber-dim:#E5F5EC;
+    --coral:#D64545;
+    --break:#F3F6FB;
+    --radius:10px;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+    --sans:'Noto Sans KR', -apple-system, 'Malgun Gothic', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  /* ---- Header ---- */
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.18em;
+    color:var(--cyan);
+    text-transform:uppercase;
+    margin:0 0 10px;
+    font-weight:600;
+  }
+  h1{
+    font-size:clamp(28px,5vw,40px);
+    font-weight:900;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+  }
+  .sub{
+    color:var(--ink-dim);
+    font-size:14px;
+    margin:0 0 26px;
+    line-height:1.6;
+  }
+
+  /* ---- Control bar ---- */
+  .controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    align-items:center;
+    background:var(--panel);
+    border:1px solid var(--grid-line);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:22px;
+    box-shadow:0 1px 3px rgba(20,40,70,.06);
+  }
+  .controls label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    display:block;
+    margin-bottom:4px;
+  }
+  .date-field input[type=date]{
+    background:#FBFCFE;
+    border:1px solid var(--grid-line);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:14px;
+    padding:8px 10px;
+    border-radius:6px;
+    color-scheme:light;
+  }
+  .date-field input[type=date]:focus-visible{outline:2px solid var(--cyan);outline-offset:1px;}
+  .day-nav{display:flex;gap:6px;}
+  .day-nav button{
+    background:#FBFCFE;
+    border:1px solid var(--grid-line);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:13px;
+    padding:8px 12px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .day-nav button:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim);}
+  .day-nav button:focus-visible{outline:2px solid var(--cyan);outline-offset:1px;}
+  .today-label{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--ink-dim);
+    margin-left:auto;
+  }
+
+  /* ---- Legend ---- */
+  .legend{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    font-size:12px;
+    color:var(--ink-dim);
+    margin-bottom:18px;
+  }
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  .sw-open{background:transparent;border:1.5px dashed var(--ink-faint);}
+  .sw-booked{background:var(--amber-dim);border:1.5px solid var(--amber);}
+  .sw-break{background:var(--break);border:1.5px solid var(--grid-line);}
+
+  /* ---- Grid table ---- */
+  .grid-shell{
+    border:1px solid var(--grid-line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    background:var(--bg-deep);
+    box-shadow:0 1px 3px rgba(20,40,70,.06);
+  }
+  table{width:100%;border-collapse:collapse;}
+  thead th{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.06em;
+    color:var(--cyan);
+    text-align:center;
+    padding:12px 8px;
+    border-bottom:1px solid var(--grid-line);
+    background:#F8FAFD;
+    position:sticky;
+    top:0;
+  }
+  thead th:first-child{text-align:left;padding-left:16px;}
+  tbody tr + tr td, tbody tr + tr th{border-top:1px solid var(--grid-line-soft);}
+  tbody th{
+    text-align:left;
+    padding:10px 16px;
+    white-space:nowrap;
+    vertical-align:middle;
+  }
+  .period-num{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .period-time{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-faint);
+    display:block;
+    margin-top:2px;
+  }
+  tr.break-row td, tr.break-row th{background:var(--break);}
+  tr.break-row .period-num{color:var(--ink-dim);font-weight:500;}
+
+  td.cell{
+    padding:6px;
+    text-align:center;
+    vertical-align:middle;
+    min-width:120px;
+  }
+  .slot-btn{
+    width:100%;
+    min-height:52px;
+    border-radius:7px;
+    border:1.5px dashed #C7D1DE;
+    background:#FBFCFE;
+    color:var(--ink-faint);
+    font-family:var(--sans);
+    font-size:12px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .slot-btn:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim);}
+  .slot-btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
+  .slot-btn.booked{
+    border:1.5px solid var(--amber);
+    background:var(--amber-dim);
+    color:var(--amber);
+    font-weight:700;
+    flex-direction:column;
+    gap:2px;
+  }
+  .slot-btn.booked:hover{border-color:var(--coral);color:var(--coral);background:#FCEBEB;}
+  .slot-btn.loading{opacity:.5;cursor:wait;}
+  .booked-note{font-weight:400;font-size:10px;color:var(--ink-dim);}
+  .slot-btn.booked:hover .booked-note{color:var(--coral);}
+
+  /* ---- Modal ---- */
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(4,14,26,.72);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--paper);
+    color:#0B2340;
+    border-radius:12px;
+    padding:24px;
+    width:100%;
+    max-width:360px;
+  }
+  .modal h2{margin:0 0 4px;font-size:18px;font-weight:900;}
+  .modal .modal-sub{font-size:13px;color:#4A6382;margin:0 0 18px;font-family:var(--mono);}
+  .modal label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:#2B4A6B;}
+  .modal input{
+    width:100%;
+    padding:10px 12px;
+    border:1.5px solid #C6D6E8;
+    border-radius:7px;
+    font-size:14px;
+    font-family:var(--sans);
+    margin-bottom:14px;
+  }
+  .modal input:focus-visible{outline:2px solid #2F6FED;border-color:#2F6FED;}
+  .modal-actions{display:flex;gap:8px;margin-top:4px;}
+  .modal-actions button{
+    flex:1;
+    padding:11px;
+    border-radius:7px;
+    border:none;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:var(--sans);
+  }
+  .btn-primary{background:#2F6FED;color:#FFFFFF;}
+  .btn-primary:hover{background:#255BC7;}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-secondary{background:#E1E9F2;color:#33465C;}
+  .btn-secondary:hover{background:#D3DEEB;}
+  .btn-danger{background:#D64545;color:#fff;}
+  .btn-danger:hover{background:#B93A3A;}
+  .modal-error{color:#C24A3A;font-size:12px;margin:-8px 0 12px;font-family:var(--mono);}
+
+  .footnote{
+    margin-top:22px;
+    font-size:12px;
+    color:var(--ink-faint);
+    line-height:1.7;
+  }
+
+  @media (max-width:640px){
+    thead th{font-size:10px;padding:8px 4px;}
+    tbody th{padding:8px 8px;}
+    .period-num{font-size:12px;}
+    td.cell{min-width:0;padding:4px;}
+    .slot-btn{min-height:44px;font-size:11px;}
+    .controls{flex-direction:column;align-items:stretch;}
+    .today-label{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">JEONNAM SCIENCE HIGH SCHOOL &middot; ROOM SCHEDULE</p>
+  <h1>수학실 예약</h1>
+  <p class="sub">수학실 1 · 2 · 3 의 교시별 사용 현황입니다. 빈 칸을 눌러 이름을 입력하면 예약되고, 예약된 칸을 누르면 취소할 수 있어요.</p>
+
+  <div class="controls">
+    <div class="date-field">
+      <label for="datePick">날짜</label>
+      <input type="date" id="datePick">
+    </div>
+    <div class="day-nav">
+      <div>
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:6px;">
+          <button id="prevDay" aria-label="이전 날짜">◀ 이전</button>
+          <button id="todayBtn">오늘</button>
+          <button id="nextDay" aria-label="다음 날짜">다음 ▶</button>
+        </div>
+      </div>
+    </div>
+    <div class="today-label" id="dayOfWeek"></div>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch sw-open"></i>예약 가능</span>
+    <span><i class="swatch sw-booked"></i>예약됨 (눌러서 취소)</span>
+    <span><i class="swatch sw-break"></i>점심시간</span>
+  </div>
+
+  <div class="grid-shell">
+    <table id="scheduleTable">
+      <thead>
+        <tr>
+          <th>교시</th>
+          <th>수학실 1</th>
+          <th>수학실 2</th>
+          <th>수학실 3</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <p class="footnote">이 페이지의 예약 정보는 구글 시트에 저장되며, 링크만 있으면 로그인 없이 누구나 예약/취소할 수 있어요. 이름은 실제 이름 또는 반+이름 등 알아볼 수 있는 형태로 입력해 주세요.</p>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+(function(){
+  const ROOMS = ['수학실1','수학실2','수학실3'];
+  const ROOM_LABELS = ['수학실 1','수학실 2','수학실 3'];
+  const PERIODS = [
+    {id:'p1',  label:'1교시',  time:'08:40 - 09:30'},
+    {id:'p2',  label:'2교시',  time:'09:40 - 10:30'},
+    {id:'p3',  label:'3교시',  time:'10:40 - 11:30'},
+    {id:'p4',  label:'4교시',  time:'11:40 - 12:30'},
+    {id:'l1',  label:'점심1',  time:'12:30 - 13:30', brk:true},
+    {id:'l2',  label:'점심2',  time:'13:30 - 14:00', brk:true},
+    {id:'p5',  label:'5교시',  time:'14:00 - 15:40'},
+    {id:'p6',  label:'6교시',  time:'16:00 - 17:40'},
+    {id:'p7',  label:'7교시',  time:'18:00 - 19:10'},
+    {id:'p8',  label:'8교시',  time:'19:10 - 20:20'},
+    {id:'p9',  label:'9교시',  time:'20:30 - 21:30'},
+    {id:'p10', label:'10교시', time:'21:30 - 21:50'},
+    {id:'p11', label:'11교시', time:'21:50 - 23:30'},
+    {id:'p12', label:'12교시', time:'23:30 - 24:00'},
+  ];
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYR99tJbjsvXLeOOdowJQSfuqESLd8Z-DhP1fvMAdUt5WLwl7_giKg_oVETkluFyQg/exec';
+  const DOW = ['일','월','화','수','목','금','토'];
+
+  const tbody = document.getElementById('tbody');
+  const datePick = document.getElementById('datePick');
+  const dayOfWeek = document.getElementById('dayOfWeek');
+  const overlay = document.getElementById('overlay');
+  const modalBody = document.getElementById('modalBody');
+
+  let currentDate = todayStr();
+  let bookings = {}; // { room: { periodId: {name, ts} } }
+  let loading = false;
+
+  function todayStr(){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function shiftDate(dateStr, delta){
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function buildRows(){
+    tbody.innerHTML = '';
+    PERIODS.forEach(p=>{
+      const tr = document.createElement('tr');
+      if(p.brk) tr.className = 'break-row';
+      const th = document.createElement('th');
+      th.innerHTML = `<span class="period-num">${p.label}</span><span class="period-time">${p.time}</span>`;
+      tr.appendChild(th);
+      ROOMS.forEach(room=>{
+        const td = document.createElement('td');
+        td.className = 'cell';
+        const btn = document.createElement('button');
+        btn.className = 'slot-btn';
+        btn.dataset.room = room;
+        btn.dataset.period = p.id;
+        btn.textContent = '비어있음';
+        btn.addEventListener('click', onSlotClick);
+        td.appendChild(btn);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderSlots(){
+    ROOMS.forEach(room=>{
+      const roomBookings = bookings[room] || {};
+      PERIODS.forEach(p=>{
+        const btn = tbody.querySelector(`.slot-btn[data-room="${room}"][data-period="${p.id}"]`);
+        if(!btn) return;
+        const b = roomBookings[p.id];
+        if(b){
+          btn.classList.add('booked');
+          btn.innerHTML = `${escapeHtml(b.name)}<span class="booked-note">눌러서 취소</span>`;
+        } else {
+          btn.classList.remove('booked');
+          btn.textContent = '비어있음';
+        }
+        btn.classList.remove('loading');
+      });
+    });
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function loadDate(){
+    setLoadingState(true);
+    try{
+      const res = await fetch(`${SCRIPT_URL}?date=${encodeURIComponent(currentDate)}&_=${Date.now()}`);
+      const json = await res.json();
+      bookings = (json && json.success && json.data) ? json.data : {};
+    }catch(e){
+      bookings = {};
+    }
+    setLoadingState(false);
+    renderSlots();
+  }
+
+  function setLoadingState(isLoading){
+    loading = isLoading;
+    tbody.querySelectorAll('.slot-btn').forEach(btn=>{
+      if(isLoading){
+        btn.classList.add('loading');
+        btn.textContent = '불러오는 중…';
+        btn.classList.remove('booked');
+      }
+    });
+  }
+
+  function updateDateUI(){
+    datePick.value = currentDate;
+    const d = new Date(currentDate + 'T00:00:00');
+    dayOfWeek.textContent = `${currentDate} (${DOW[d.getDay()]})`;
+  }
+
+  function onSlotClick(e){
+    if(loading) return;
+    const btn = e.currentTarget;
+    const room = btn.dataset.room;
+    const periodId = btn.dataset.period;
+    const period = PERIODS.find(p=>p.id===periodId);
+    const existing = (bookings[room] || {})[periodId];
+    if(existing){
+      openCancelModal(room, period, existing);
+    } else {
+      openBookModal(room, period);
+    }
+  }
+
+  function openBookModal(room, period){
+    const roomLabel = ROOM_LABELS[ROOMS.indexOf(room)];
+    modalBody.innerHTML = `
+      <h2>${roomLabel} 예약</h2>
+      <p class="modal-sub">${period.label} · ${period.time}</p>
+      <label for="bookerName">이름</label>
+      <input id="bookerName" type="text" placeholder="예: 3반 홍길동" maxlength="20" autocomplete="off">
+      <div class="modal-error" id="modalErr" style="display:none;"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="cancelModalBtn">닫기</button>
+        <button class="btn-primary" id="confirmBookBtn">예약하기</button>
+      </div>
+    `;
+    showOverlay();
+    const input = document.getElementById('bookerName');
+    input.focus();
+    document.getElementById('cancelModalBtn').addEventListener('click', hideOverlay);
+    document.getElementById('confirmBookBtn').addEventListener('click', ()=>confirmBook(room, period, input));
+    input.addEventListener('keydown', ev=>{ if(ev.key==='Enter') confirmBook(room, period, input); });
+  }
+
+  async function confirmBook(room, period, input){
+    const name = input.value.trim();
+    const errEl = document.getElementById('modalErr');
+    if(!name){
+      errEl.textContent = '이름을 입력해 주세요.';
+      errEl.style.display = 'block';
+      return;
+    }
+    const confirmBtn = document.getElementById('confirmBookBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '저장 중…';
+    try{
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'book', date: currentDate, room, periodId: period.id, name })
+      });
+      const json = await res.json();
+      if(!json.success){
+        errEl.textContent = json.message || '이미 다른 사람이 예약했어요. 새로고침 후 확인해 주세요.';
+        errEl.style.display = 'block';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '예약하기';
+        await loadDate();
+        return;
+      }
+      await loadDate();
+      hideOverlay();
+    }catch(e){
+      errEl.textContent = '저장에 실패했어요. 다시 시도해 주세요.';
+      errEl.style.display = 'block';
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '예약하기';
+    }
+  }
+
+  function openCancelModal(room, period, existing){
+    const roomLabel = ROOM_LABELS[ROOMS.indexOf(room)];
+    modalBody.innerHTML = `
+      <h2>예약 취소</h2>
+      <p class="modal-sub">${roomLabel} · ${period.label} · ${period.time}</p>
+      <label>예약자</label>
+      <input type="text" value="${escapeHtml(existing.name)}" disabled style="background:#EEF3F9;color:#5A7290;">
+      <p style="font-size:12px;color:#4A6382;margin:-6px 0 14px;">본인 확인을 위해 예약자 이름을 그대로 입력해 주세요.</p>
+      <label for="confirmName">이름 확인</label>
+      <input id="confirmName" type="text" placeholder="이름 입력" autocomplete="off">
+      <div class="modal-error" id="modalErr" style="display:none;"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="cancelModalBtn">닫기</button>
+        <button class="btn-danger" id="confirmCancelBtn">예약 취소</button>
+      </div>
+    `;
+    showOverlay();
+    const input = document.getElementById('confirmName');
+    input.focus();
+    document.getElementById('cancelModalBtn').addEventListener('click', hideOverlay);
+    document.getElementById('confirmCancelBtn').addEventListener('click', ()=>confirmCancel(room, period, existing, input));
+    input.addEventListener('keydown', ev=>{ if(ev.key==='Enter') confirmCancel(room, period, existing, input); });
+  }
+
+  async function confirmCancel(room, period, existing, input){
+    const typed = input.value.trim();
+    const errEl = document.getElementById('modalErr');
+    if(typed !== existing.name){
+      errEl.textContent = '이름이 일치하지 않아요.';
+      errEl.style.display = 'block';
+      return;
+    }
+    const confirmBtn = document.getElementById('confirmCancelBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '취소 중…';
+    try{
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'cancel', date: currentDate, room, periodId: period.id, name: typed })
+      });
+      const json = await res.json();
+      if(!json.success){
+        errEl.textContent = json.message || '취소에 실패했어요. 다시 시도해 주세요.';
+        errEl.style.display = 'block';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '예약 취소';
+        await loadDate();
+        return;
+      }
+      await loadDate();
+      hideOverlay();
+    }catch(e){
+      errEl.textContent = '취소에 실패했어요. 다시 시도해 주세요.';
+      errEl.style.display = 'block';
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '예약 취소';
+    }
+  }
+
+  function showOverlay(){ overlay.classList.add('show'); }
+  function hideOverlay(){ overlay.classList.remove('show'); modalBody.innerHTML=''; }
+  overlay.addEventListener('click', e=>{ if(e.target === overlay) hideOverlay(); });
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape') hideOverlay(); });
+
+  datePick.addEventListener('change', ()=>{
+    if(!datePick.value) return;
+    currentDate = datePick.value;
+    updateDateUI();
+    loadDate();
+  });
+  document.getElementById('prevDay').addEventListener('click', ()=>{
+    currentDate = shiftDate(currentDate, -1);
+    updateDateUI();
+    loadDate();
+  });
+  document.getElementById('nextDay').addEventListener('click', ()=>{
+    currentDate = shiftDate(currentDate, 1);
+    updateDateUI();
+    loadDate();
+  });
+  document.getElementById('todayBtn').addEventListener('click', ()=>{
+    currentDate = todayStr();
+    updateDateUI();
+    loadDate();
+  });
+
+  buildRows();
+  updateDateUI();
+  loadDate();
+})();
+</script>
+</body>
+</html>
